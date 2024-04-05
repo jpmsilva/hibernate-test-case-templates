@@ -50,7 +50,9 @@ public class JPAUnitTestCase {
 		travel = entityManager.find(Travel.class, id);
 		ExpenseEntry expense = new ExpenseEntry();
 		expense.travel = travel;
-		expense.supportingFiles.add(new FileData());
+		FileData fileData = new FileData();
+		fileData.expenses.add(expense);
+		expense.supportingFiles.add(fileData);
 		travel.expenses.add(expense);
 		entityManager.unwrap(Session.class).saveOrUpdate(travel);
 		entityManager.getTransaction().commit();
@@ -74,7 +76,9 @@ public class JPAUnitTestCase {
 		travel = entityManager.find(Travel.class, id);
 		ExpenseEntry expense = new ExpenseEntry();
 		expense.travel = travel;
-		expense.supportingFiles.add(new FileData());
+		FileData fileData = new FileData();
+		fileData.expenses.add(expense);
+		expense.supportingFiles.add(fileData);
 		travel.expenses.add(expense);
 		entityManager.merge(travel);
 		entityManager.getTransaction().commit();
