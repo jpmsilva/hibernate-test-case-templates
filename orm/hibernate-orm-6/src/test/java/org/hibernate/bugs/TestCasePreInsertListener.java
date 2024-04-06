@@ -3,7 +3,7 @@ package org.hibernate.bugs;
 import org.hibernate.event.spi.PreInsertEvent;
 import org.hibernate.event.spi.PreInsertEventListener;
 
-public class TestCasePreInsertListener implements PreInsertEventListener  {
+public class TestCasePreInsertListener implements PreInsertEventListener {
 
   public int count = 0;
 

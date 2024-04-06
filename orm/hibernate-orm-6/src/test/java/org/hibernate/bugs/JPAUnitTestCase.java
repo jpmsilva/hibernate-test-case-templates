@@ -21,15 +21,19 @@ public class JPAUnitTestCase {
 
 	private EntityManagerFactory entityManagerFactory;
 
-	private TestCasePreInsertListener eventListener;
+	private TestCasePreInsertListener preEventListener;
+
+	private TestCasePostInsertListener postEventListener;
 
 	@Before
 	public void init() {
 		entityManagerFactory = Persistence.createEntityManagerFactory( "templatePU" );
 		SessionFactoryImplementor sessionFactory = entityManagerFactory.unwrap(SessionFactoryImplementor.class);
 		EventListenerRegistry registry = Objects.requireNonNull(sessionFactory.getServiceRegistry().getService(EventListenerRegistry.class));
-		eventListener = new TestCasePreInsertListener();
-		registry.getEventListenerGroup(EventType.PRE_INSERT).appendListener(eventListener);
+		preEventListener = new TestCasePreInsertListener();
+		postEventListener = new TestCasePostInsertListener();
+		registry.getEventListenerGroup(EventType.PRE_INSERT).appendListener(preEventListener);
+		registry.getEventListenerGroup(EventType.POST_INSERT).appendListener(postEventListener);
 	}
 
 	@After
@@ -38,7 +42,7 @@ public class JPAUnitTestCase {
 	}
 
 	@Test
-	public void saveOrUpdateTest() throws Exception {
+	public void saveOrUpdatePreTest() {
 		EntityManager entityManager = entityManagerFactory.createEntityManager();
 
 		entityManager.getTransaction().begin();
@@ -58,13 +62,11 @@ public class JPAUnitTestCase {
 		entityManager.getTransaction().commit();
 		entityManager.close();
 
-		assertEquals(1, eventListener.count);
+		assertEquals(1, preEventListener.count);
 	}
 
-	// Entities are auto-discovered, so just add them anywhere on class-path
-	// Add your tests, using standard JUnit.
 	@Test
-	public void mergeTest() throws Exception {
+	public void mergePreTest() {
 		EntityManager entityManager = entityManagerFactory.createEntityManager();
 
 		entityManager.getTransaction().begin();
@@ -84,6 +86,54 @@ public class JPAUnitTestCase {
 		entityManager.getTransaction().commit();
 		entityManager.close();
 
-		assertEquals(1, eventListener.count);
+		assertEquals(1, preEventListener.count);
+	}
+
+	@Test
+	public void saveOrUpdatePostTest() {
+		EntityManager entityManager = entityManagerFactory.createEntityManager();
+
+		entityManager.getTransaction().begin();
+		Travel travel = new Travel();
+		long id = entityManager.merge(travel).id;
+		entityManager.getTransaction().commit();
+
+		entityManager.getTransaction().begin();
+		travel = entityManager.find(Travel.class, id);
+		ExpenseEntry expense = new ExpenseEntry();
+		expense.travel = travel;
+		FileData fileData = new FileData();
+		fileData.expenses.add(expense);
+		expense.supportingFiles.add(fileData);
+		travel.expenses.add(expense);
+		entityManager.unwrap(Session.class).saveOrUpdate(travel);
+		entityManager.getTransaction().commit();
+		entityManager.close();
+
+		assertEquals(1, postEventListener.count);
+	}
+
+	@Test
+	public void mergePostTest() {
+		EntityManager entityManager = entityManagerFactory.createEntityManager();
+
+		entityManager.getTransaction().begin();
+		Travel travel = new Travel();
+		long id = entityManager.merge(travel).id;
+		entityManager.getTransaction().commit();
+
+		entityManager.getTransaction().begin();
+		travel = entityManager.find(Travel.class, id);
+		ExpenseEntry expense = new ExpenseEntry();
+		expense.travel = travel;
+		FileData fileData = new FileData();
+		fileData.expenses.add(expense);
+		expense.supportingFiles.add(fileData);
+		travel.expenses.add(expense);
+		entityManager.merge(travel);
+		entityManager.getTransaction().commit();
+		entityManager.close();
+
+		assertEquals(1, postEventListener.count);
 	}
 }
